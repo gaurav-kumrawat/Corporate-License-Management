@@ -1,0 +1,13 @@
+spring:
+  cloud:
+    config:
+      name: ConfigServer
+      uri: http://localhost:8888
+  profiles:
+    active: gku
+  application:
+    name: user-license-management
+    
+server:
+  port: 8300
+  

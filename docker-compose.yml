@@ -1,0 +1,128 @@
+version: "3.8"
+services: 
+  eurekaserver:
+    image: harshkumar2001/aws-ms-corporate01:eureka-server-docker
+    ports:
+      - "8761:8761"
+    networks:
+      - test-network    
+  
+  
+  apigateway:
+   image: harshkumar2001/aws-ms-corporate01:api-gateway-docker
+   ports:
+        - "8500:8500"
+   networks:
+        - test-network
+   environment:
+        - eureka.client.service-url.defaultZone=http://eurekaserver:8761/eureka
+        - spring.zipkin.base-url=http://zipkinserver:9411
+   depends_on:
+        - eurekaserver
+        - zipkinserver
+
+   zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - 22181:2181
+
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - zookeeper
+    ports:
+      - 29092:9092
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1      
+  licensecatalogue:
+   image: license-catalogue-docker.jar
+   ports:
+        - "8000:8000"
+   networks:
+        - test-network
+   environment:
+      - eureka.client.serviceUrl.defaultZone=http://eurekaserver:8761/eureka/
+      - spring.zipkin.base-url=http://zipkinserver:9411
+   depends_on:
+      - apigateway
+      - eurekaserver
+      - zipkinserver
+      - mysqldb
+      
+  usermanagement:
+   image: user-management-docker.jar
+   ports:
+        - "8100:8100"
+   networks:
+        - test-network
+   environment:
+      - eureka.client.serviceUrl.defaultZone=http://eurekaserver:8761/eureka/
+      - spring.zipkin.base-url=http://zipkinserver:9411
+   depends_on:
+      - apigateway
+      - eurekaserver
+      - zipkinserver
+      - mysqldb
+     
+  ordermanagement:
+   image: order-management-docker.jar
+   ports:
+        - "8200:8200"
+   networks:
+        - test-network
+   environment:
+      - eureka.client.serviceUrl.defaultZone=http://eurekaserver:8761/eureka/
+      - spring.zipkin.base-url=http://zipkinserver:9411
+   depends_on:
+      - apigateway
+      - eurekaserver
+      - zipkinserver
+      - mysqldb 
+      
+      
+      
+  userlicensemanagement:
+   image: user-license-management-docker.jar
+   ports:
+        - "8300:8300"
+   networks:
+        - test-network
+   environment:
+      - eureka.client.serviceUrl.defaultZone=http://eurekaserver:8761/eureka/
+      - spring.zipkin.base-url=http://zipkinserver:9411
+   depends_on:
+      - apigateway
+      - eurekaserver
+      - zipkinserver
+      - mysqldb 
+      
+  zipkinserver:
+     image: openzipkin/zipkin
+     ports:
+       - "9411:9411"
+      
+  mysqldb:
+   image: "mysql:5.7"
+   restart: always
+   ports:
+        - "3307:3306"
+   networks:
+        - test-network
+   environment:
+      MYSQL_DATABASE: ms_corporate
+      MYSQL_USER: root12
+      MYSQL_PASSWORD: Root@2371
+      MYSQL_ROOT_PASSWORD: Root@2371  
+      
+      
+  
+networks:
+  test-network:
